@@ -2,6 +2,8 @@ import SwiftUI
 import FirebaseAuth
 
 struct LoginView: View {
+    @EnvironmentObject var networkStatusManager: NetworkStatusManager // İnternet durumu için
+
     @State private var email = ""
     @State private var password = ""
     @State private var loginMessage = ""
@@ -58,14 +60,23 @@ struct LoginView: View {
                             .shadow(radius: 5)
                             .padding(.horizontal, 40)
                     }
+                    .disabled(!networkStatusManager.isConnected) // Ağ yoksa buton devre dışı
 
                     // Hata veya başarı mesajı
                     if !loginMessage.isEmpty {
                         Text(loginMessage)
-                            .foregroundColor(.yellow)
+                            .foregroundColor(loginMessage.contains("başarılı") ? .green : .yellow) // Başarı mesajı yeşil, hata mesajı sarı
                             .fontWeight(.semibold)
                             .padding(.top, 10)
                             .multilineTextAlignment(.center)
+                    }
+
+                    // İnternet bağlantısı kontrolü
+                    if !networkStatusManager.isConnected {
+                        Text("İnternet bağlantısı yok!")
+                            .foregroundColor(.red)
+                            .fontWeight(.bold)
+                            .padding(.top, 20)
                     }
 
                     Spacer()
@@ -75,14 +86,46 @@ struct LoginView: View {
         }
     }
 
+    // Giriş yapma işlevi
     func signIn() {
+        // İnternet bağlantısı yoksa giriş işlemi yapılmasın
+        guard networkStatusManager.isConnected else {
+            loginMessage = "İnternet bağlantısı yok. Lütfen internet bağlantınızı kontrol edin."
+            return
+        }
+
+        guard !email.isEmpty, !password.isEmpty else {
+            loginMessage = "E-posta ve şifre alanları boş bırakılamaz."
+            return
+        }
+
         Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-            if let error = error {
-                loginMessage = "Giriş hatası: \(error.localizedDescription)"
+            if let error = error as NSError? {
+                loginMessage = parseFirebaseError(error: error)
             } else {
                 loginMessage = "Giriş başarılı!"
                 isLoggedIn = true // Başarılı girişte kullanıcıyı anasayfaya yönlendirmek için
             }
+        }
+    }
+
+    // Firebase hata mesajlarını kullanıcılara daha anlaşılır hale getiren fonksiyon
+    func parseFirebaseError(error: NSError) -> String {
+        let errorCode = AuthErrorCode(rawValue: error.code)
+
+        switch errorCode {
+        case .invalidEmail:
+            return "Geçersiz e-posta formatı. Lütfen geçerli bir e-posta adresi girin."
+        case .wrongPassword:
+            return "Hatalı şifre. Lütfen şifrenizi kontrol edin."
+        case .userNotFound:
+            return "Bu e-posta adresine ait bir kullanıcı bulunamadı."
+        case .networkError:
+            return "Ağ bağlantısı sağlanamadı. Lütfen internet bağlantınızı kontrol edin."
+        case .tooManyRequests:
+            return "Çok fazla giriş denemesi yaptınız. Lütfen daha sonra tekrar deneyin."
+        default:
+            return "Bilinmeyen bir hata oluştu. \(error.localizedDescription)"
         }
     }
 }

@@ -60,14 +60,36 @@ struct HomeView: View {
                             .padding(.top, 10)
                         }
                         .padding(.bottom, 40)
-                    } else if let errorMessage = errorMessage {
-                        Text("Hata: \(errorMessage)")
-                            .foregroundColor(.red)
-                            .padding()
                     } else {
-                        Text("Veriler alınıyor...")
-                            .foregroundColor(.white)
-                            .padding()
+                        VStack {
+                            if let errorMessage = errorMessage {
+                                // Mevcut konumu al butonu
+                                VStack {
+                                    Text(errorMessage)
+                                        .foregroundColor(.red)
+                                        .padding(.bottom, 10)
+
+                                    Button(action: {
+                                        Task {
+                                            await fetchWeatherForCurrentLocation()
+                                        }
+                                    }) {
+                                        Text("Mevcut konumu almak için tıklayınız")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .padding()
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.blue)
+                                            .cornerRadius(15)
+                                            .padding(.horizontal)
+                                    }
+                                }
+                            } else {
+                                Text("Veriler alınıyor...")
+                                    .foregroundColor(.white)
+                                    .padding()
+                            }
+                        }
                     }
 
                     // 5 GÜNLÜK HAVA DURUMU TAHMİNİ
@@ -113,7 +135,9 @@ struct HomeView: View {
                     // Favori Şehir Butonu: Favorilerdeyse kaldırma butonu, değilse ekleme butonu
                     if isCityInFavorites {
                         Button(action: {
-                            removeCityFromFavorites()
+                            Task {
+                                await removeCityFromFavorites()
+                            }
                         }) {
                             Text("Şehri Favorilerden Kaldır")
                                 .font(.headline)
@@ -126,7 +150,9 @@ struct HomeView: View {
                         }
                     } else {
                         Button(action: {
-                            addCityToFavorites()
+                            Task {
+                                await addCityToFavorites()
+                            }
                         }) {
                             Text("Şehri Favoriye Ekle")
                                 .font(.headline)
@@ -137,13 +163,6 @@ struct HomeView: View {
                                 .cornerRadius(15)
                                 .padding(.horizontal)
                         }
-                    }
-
-                    // Hata Mesajı (Eğer varsa)
-                    if let errorMessage = errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .padding()
                     }
                 }
                 .padding(.vertical)
@@ -178,11 +197,13 @@ struct HomeView: View {
                             .padding()
 
                         Button("Ara", action: {
-                            displayedCity = selectedCity
-                            fetchWeather(for: selectedCity)
-                            fetchFiveDayWeather(for: selectedCity)
-                            checkIfCityIsInFavorites(city: selectedCity)
-                            showCitySearch = false
+                            Task {
+                                displayedCity = selectedCity
+                                await fetchWeather(for: selectedCity)
+                                await fetchFiveDayWeather(for: selectedCity)
+                                await checkIfCityIsInFavorites(city: selectedCity)
+                                showCitySearch = false
+                            }
                         })
                         .padding()
                         .background(Color.blue)
@@ -206,12 +227,14 @@ struct HomeView: View {
                             ScrollView {
                                 ForEach(favoriteCities, id: \.self) { city in
                                     Button(action: {
-                                        selectedCity = city
-                                        displayedCity = city
-                                        fetchWeather(for: city)
-                                        fetchFiveDayWeather(for: city)
-                                        checkIfCityIsInFavorites(city: city)
-                                        showMenu.toggle() // Menü kapat
+                                        Task {
+                                            selectedCity = city
+                                            displayedCity = city
+                                            await fetchWeather(for: city)
+                                            await fetchFiveDayWeather(for: city)
+                                            await checkIfCityIsInFavorites(city: city)
+                                            showMenu.toggle() // Menü kapat
+                                        }
                                     }) {
                                         Text(city)
                                             .padding()
@@ -227,9 +250,11 @@ struct HomeView: View {
 
                             // Mevcut konuma göre hava durumu butonu
                             Button(action: {
-                                displayedCity = "Mevcut Konum"
-                                fetchWeatherForCurrentLocation()
-                                showMenu.toggle()
+                                Task {
+                                    displayedCity = "Mevcut Konum"
+                                    await fetchWeatherForCurrentLocation()
+                                    showMenu.toggle()
+                                }
                             }) {
                                 Text("Mevcut Konuma Göre Hava Durumu")
                                     .font(.headline)
@@ -265,8 +290,10 @@ struct HomeView: View {
                 }
             }
             .onAppear {
-                fetchWeatherForCurrentLocation()
-                fetchFavoriteCities()
+                Task {
+                    await fetchWeatherForCurrentLocation()
+                    await fetchFavoriteCities()
+                }
             }
         }
     }
@@ -284,30 +311,52 @@ struct HomeView: View {
         return dateText
     }
 
-    // Şehri favorilerde kontrol eden fonksiyon
-    func checkIfCityIsInFavorites(city: String) {
-        if favoriteCities.contains(city) {
-            isCityInFavorites = true
-        } else {
-            isCityInFavorites = false
+    // Şehri favorilerde kontrol eden fonksiyon (async/await)
+    func checkIfCityIsInFavorites(city: String) async {
+        do {
+            if let cities = try await cityService.getFavoriteCities() {
+                favoriteCities = cities
+                isCityInFavorites = favoriteCities.contains(city)
+            }
+        } catch {
+            errorMessage = "Favori şehirler alınamadı: \(error.localizedDescription)"
         }
     }
 
-    // Favori şehirden kaldırma işlemi
-    func removeCityFromFavorites() {
+    // Favori şehirden kaldırma işlemi (async/await)
+    func removeCityFromFavorites() async {
         guard !selectedCity.isEmpty else {
             self.errorMessage = "Şehir seçilmedi."
             return
         }
 
-        cityService.removeCityFromFavorites(city: selectedCity) { success in
+        do {
+            let success = try await cityService.removeCityFromFavorites(city: selectedCity)
             if success {
                 print("Şehir favorilerden kaldırıldı.")
-                fetchFavoriteCities()
-                checkIfCityIsInFavorites(city: selectedCity)
+                await fetchFavoriteCities()
+                await checkIfCityIsInFavorites(city: selectedCity)
             } else {
                 self.errorMessage = "Şehir favorilerden kaldırılamadı."
             }
+        } catch {
+            self.errorMessage = "Favori şehir kaldırılamadı: \(error.localizedDescription)"
+        }
+    }
+
+    // Favori şehir ekleme işlemi (async/await)
+    func addCityToFavorites() async {
+        do {
+            let success = try await cityService.addCityToFavorites(city: selectedCity)
+            if success {
+                print("Şehir favorilere eklendi.")
+                await fetchFavoriteCities()
+                await checkIfCityIsInFavorites(city: selectedCity)
+            } else {
+                self.errorMessage = "En fazla 5 şehir favorilere eklenebilir ya da şehir zaten eklenmiş."
+            }
+        } catch {
+            self.errorMessage = "Favori şehir eklenemedi: \(error.localizedDescription)"
         }
     }
 
@@ -321,8 +370,57 @@ struct HomeView: View {
         }
     }
 
+    // Mevcut konum için hava durumu verisini çeken fonksiyon (async/await)
+    func fetchWeatherForCurrentLocation() async {
+        guard let location = locationManager.location else {
+            self.errorMessage = "Konum bilgisi mevcut değil."
+            return
+        }
 
-    // Arka plan için renk seçimi
+        do {
+            weatherData = try await weatherService.fetchWeather(forLatitude: location.latitude, longitude: location.longitude)
+            errorMessage = nil
+        } catch {
+            weatherData = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // Şehir adına göre hava durumu verisini getir (async/await)
+    func fetchWeather(for city: String) async {
+        do {
+            weatherData = try await weatherService.fetchWeather(for: city)
+            errorMessage = nil
+        } catch {
+            weatherData = nil
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // 5 günlük hava durumu verisini getir (async/await)
+    func fetchFiveDayWeather(for city: String) async {
+        do {
+            let forecastData = try await weatherService.fetchFiveDayWeather(for: city)
+            fiveDayWeatherData = forecastData.list
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // Favori şehirleri Firestore'dan getir (async/await)
+    func fetchFavoriteCities() async {
+        do {
+            if let cities = try await cityService.getFavoriteCities() {
+                favoriteCities = cities
+            } else {
+                errorMessage = "Favori şehirler getirilemedi."
+            }
+        } catch {
+            errorMessage = "Favori şehirler alınamadı: \(error.localizedDescription)"
+        }
+    }
+
+    // Hava durumu için arka plan rengi
     func backgroundColor(for condition: String) -> Color {
         switch condition.lowercased() {
         case "clear sky", "sunny":
@@ -338,7 +436,7 @@ struct HomeView: View {
         }
     }
 
-    // Hava durumu için emoji/simge seçimi
+    // Hava durumu için emoji seçimi
     func weatherEmoji(for condition: String) -> String {
         switch condition.lowercased() {
         case "clear sky", "sunny":
@@ -353,76 +451,4 @@ struct HomeView: View {
             return "🌍"
         }
     }
-
-    // Mevcut konum için hava durumu verisini çeken fonksiyon
-    func fetchWeatherForCurrentLocation() {
-        guard let location = locationManager.location else {
-            self.errorMessage = "Konum bilgisi mevcut değil."
-            return
-        }
-
-        weatherService.fetchWeather(forLatitude: location.latitude, longitude: location.longitude) { result in
-            switch result {
-            case .success(let data):
-                self.weatherData = data
-                self.errorMessage = nil
-            case .failure(let error):
-                self.weatherData = nil
-                self.errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    // Şehir adına göre hava durumu verisini getir
-    func fetchWeather(for city: String) {
-        weatherService.fetchWeather(for: city) { result in
-            switch result {
-            case .success(let data):
-                self.weatherData = data
-                self.errorMessage = nil
-            case .failure(let error):
-                self.weatherData = nil
-                self.errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    // 5 günlük hava durumu verisini getir
-    func fetchFiveDayWeather(for city: String) {
-        weatherService.fetchFiveDayWeather(for: city) { result in
-            switch result {
-            case .success(let forecastData):
-                self.fiveDayWeatherData = forecastData.list
-            case .failure(let error):
-                self.errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    // Favori şehirleri Firestore'dan getir
-    func fetchFavoriteCities() {
-        cityService.getFavoriteCities { cities in
-            if let cities = cities {
-                self.favoriteCities = cities
-            } else {
-                print("Favori şehirler getirilemedi.")
-            }
-        }
-    }
-
-    // Şehir favorilere ekle
-    func addCityToFavorites() {
-        cityService.addCityToFavorites(city: selectedCity) { success in
-            if success {
-                print("Şehir favorilere eklendi.")
-                fetchFavoriteCities()
-                checkIfCityIsInFavorites(city: selectedCity)
-            } else {
-                self.errorMessage = "En fazla 5 şehir favorilere eklenebilir ya da şehir zaten eklenmiş."
-            }
-        }
-    }
-    
-
-
 }

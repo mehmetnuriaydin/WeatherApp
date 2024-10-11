@@ -28,31 +28,33 @@ struct ContentView: View {
             }
             
             Button("Fetch Weather for Current Location") {
-                fetchWeather()
+                Task {
+                    await fetchWeather()
+                }
             }
         }
         .padding()
         .onAppear {
-            fetchWeather()
+            Task {
+                await fetchWeather()
+            }
         }
     }
     
-    private func fetchWeather() {
+    private func fetchWeather() async {
         guard let location = locationManager.location else {
             self.errorMessage = "Location not available."
             return
         }
 
-        // Koordinatlar ile hava durumu verisini getirme
-        weatherService.fetchWeather(forLatitude: location.latitude, longitude: location.longitude) { result in
-            switch result {
-            case .success(let data):
-                self.weatherData = data
-                self.errorMessage = nil
-            case .failure(let error):
-                self.weatherData = nil
-                self.errorMessage = error.localizedDescription
-            }
+        // Koordinatlar ile hava durumu verisini async olarak getiriyoruz
+        do {
+            let data = try await weatherService.fetchWeather(forLatitude: location.latitude, longitude: location.longitude)
+            self.weatherData = data
+            self.errorMessage = nil
+        } catch {
+            self.weatherData = nil
+            self.errorMessage = error.localizedDescription
         }
     }
 }
