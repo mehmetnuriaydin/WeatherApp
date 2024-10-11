@@ -86,13 +86,12 @@ class CityService {
 
         let docRef = db.collection("users").document(userId)
 
-        // Mevcut favori şehirler dizisini getir
         docRef.getDocument { (document, error) in
             if let document = document, document.exists {
                 var favorites = document.data()?["favorites"] as? [String] ?? []
                 
-                // Şehir favorilerde varsa kaldır
-                if let index = favorites.firstIndex(of: city) {
+                // Şehir favorilerde varsa büyük/küçük harf duyarlılığını kaldırarak karşılaştır
+                if let index = favorites.firstIndex(where: { $0.caseInsensitiveCompare(city) == .orderedSame }) {
                     favorites.remove(at: index)
                     docRef.updateData(["favorites": favorites]) { error in
                         if let error = error {
@@ -113,4 +112,5 @@ class CityService {
             }
         }
     }
+
 }
