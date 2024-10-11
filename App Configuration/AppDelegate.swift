@@ -42,25 +42,25 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
     }
     
-    // Remote Notification alındığında tetiklenir (APNs token)
+    // APNs token alındığında tetiklenir (manuel olarak FCM'ye ileteceğiz)
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         print("APNs Token alındı: \(deviceToken)")
         
-        // APNs token'ını FCM'e kaydet
-        Messaging.messaging().apnsToken = deviceToken
-        
-        // APNs token'ı string formatında
+        // APNs token'ı string formatında yazdırma
         let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
         let token = tokenParts.joined()
-        print("APNs Token: \(token)")
+        print("APNs Token (String Formatında): \(token)")
+
+        // APNs token'ı manuel olarak FCM'ye iletin
+        Messaging.messaging().apnsToken = deviceToken
     }
 
-    // FCM token yenilendiğinde tetiklenir
+    // FCM token yenilendiğinde tetiklenir ve console'a yazdırılır
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken = fcmToken else { return }
         print("FCM token yenilendi: \(fcmToken)")
         
-        // FCM token'ı backend'e kaydetme işlemlerini buraya ekleyebilirsiniz
+        // FCM token'ı backend'e kaydetme işlemleri buraya eklenebilir
         sendFCMTokenToServer(fcmToken)
     }
     

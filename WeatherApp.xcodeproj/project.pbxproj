@@ -32,6 +32,8 @@
 		3224304A2CB21A3900437CCD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3224304B2CB21A3900437CCD /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3224304C2CB21A3900437CCD /* WeatherAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAppApp.swift; sourceTree = "<group>"; };
+		32D206B52CB8FE5E00BFF098 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		32D206B62CB901C200BFF098 /* WeatherApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WeatherApp.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -93,6 +95,8 @@
 		3224304D2CB21A3900437CCD /* WeatherApp */ = {
 			isa = PBXGroup;
 			children = (
+				32D206B62CB901C200BFF098 /* WeatherApp.entitlements */,
+				32D206B52CB8FE5E00BFF098 /* Info.plist */,
 				322430492CB21A3900437CCD /* Preview Content */,
 				3224304A2CB21A3900437CCD /* Assets.xcassets */,
 				3224304B2CB21A3900437CCD /* ContentView.swift */,
@@ -329,12 +333,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WeatherApp/WeatherApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WeatherApp/Preview Content\"";
-				DEVELOPMENT_TEAM = A8T64F3CX4;
+				DEVELOPMENT_TEAM = HWV56LDY7D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WeatherApp/Info.plist;
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your location is used to fetch weather data in the background.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to fetch weather data for your city.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -360,12 +366,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WeatherApp/WeatherApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"WeatherApp/Preview Content\"";
-				DEVELOPMENT_TEAM = A8T64F3CX4;
+				DEVELOPMENT_TEAM = HWV56LDY7D;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WeatherApp/Info.plist;
 				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "Your location is used to fetch weather data in the background.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to fetch weather data for your city.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
